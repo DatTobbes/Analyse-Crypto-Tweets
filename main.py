@@ -22,3 +22,8 @@ streamer = OnlineTweetStreamer(text_analyzer, tweets)
 
 streamer.get_batches(BATCHES, BATCH_SIZE)
 print(text_analyzer.get_word_counts(10))
+
+mapped_tweets, word_to_int, word_counts = text_analyzer.get_words_counts_for_tweet()
+print(mapped_tweets)
+print(word_counts)
+print(word_to_int)
