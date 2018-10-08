@@ -3,45 +3,69 @@ Mit diesem Script werden Tweets aus einer Tabelle ausgelesen und
 die einzelnen Wörter in den Tweets gezählt
 """
 
+from collections import Counter
 import re
 import matplotlib.pyplot as plt
-
-from collections import Counter
+import numpy as np
+import pandas as pd
 
 from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
+from textblob import TextBlob
 
 class Preprocessor:
 
     def __init__(self):
+
         self.counter = Counter()
         self.tokenized =[]
+        self.stop_words = set(stopwords.words('english'))
+        self.tokenized_without_most_frequent = []
 
     def tokenizer(self, text):
-        stop_words = set(stopwords.words('english'))
 
-        # text = re.sub('<\[^>*>', '', text)
-        # emoticons = re.findall("(\?::|;|=)(\?:-)?(\?:\)|\(|D|P)", text.lower())
         tokens = word_tokenize(text)
+        tokens = [w.lower() for w in tokens]
         words = [word for word in tokens if word.isalpha()]
-        # text = "{0}{1}".format(re.sub('\[\W+', ' ', text.lower()), ' '.join(emoticons).replace('-', ''))
-        self.tokenized = [w for w in words if w not in stop_words]
+        self.tokenized = [w for w in words if w not in self.stop_words]
 
-        self.tokenized = self.steeming(self.tokenized)
-
+        self.tokenized = self.__lemmatize()
         self.counter.update(self.tokenized)
         return self.tokenized
 
-    def steeming(self, tokens):
-        # stemming of words
+    def __steeming(self):
+
         porter = PorterStemmer()
+        return [porter.stem(word) for word in self.tokenized]
 
-        return [porter.stem(word) for word in tokens]
+    def __lemmatize(self):
 
-    def get_word_counts(self, n=100):
+        lemmatizer = WordNetLemmatizer()
+
+        return [lemmatizer.lemmatize(word) for word in self.tokenized]
+
+    def __spelling_Correction(self):
+
+        return [TextBlob(word) for word in self.__lemmatize()]
+
+    def __get_word_counts(self, n=10):
         return self.counter.most_common(n)
+
+    def __normalize_word_frequencies(self, n=10):
+
+        word_freq = []
+        words = []
+        for k,v in self.__get_word_counts(n):
+            words.append(k)
+            word_freq.append(v)
+
+        mean_values = np.mean(word_freq)
+        std_values = np.std(word_freq)
+
+        normalized = word_freq/np.max(word_freq)
+
+        return zip(words, normalized, word_freq)
 
     def get_words_counts_for_tweet(self):
         mapped_tweets = []
@@ -55,11 +79,22 @@ class Preprocessor:
 
         return mapped_tweets, word_to_int, word_counts
 
-    def plot_word_frequency(self, n=10):
+    def remove_most_frequent_words(self, n=10):
 
-        for k,v in self.counter.most_common(n):
-            x = k
-            y = v
+        lst = self.counter.most_common(n)
+        df = pd.DataFrame(lst, columns=['Word', 'Count'])
 
-        plt.scatter()
+        most_frequent = self.counter.most_common(n)
+        self.tokenized_without_most_frequent= [w for w in self.tokenized if w not in most_frequent]
+        return self.tokenized_without_most_frequent
+
+    def plot_word_frequency(self, n=100):
+
+        norm_set = self.__normalize_word_frequencies(n)
+
+        x, y, s = zip(*norm_set)
+        plt.scatter(x=x, y=y, s=s)
+
+        plt.xticks(np.arange(0,n, step= n/10),x)
+        plt.gca().axes.get_yaxis().set_visible(False)
         plt.show()
