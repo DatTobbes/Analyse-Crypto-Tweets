@@ -12,12 +12,11 @@ class OnlineTweetStreamer:
         self.dataframe = tweets
         self.row_iterator = self.dataframe.iterrows()
         self.preprocessor = preprocessor
-        self.row_counter= 0
+        self.row_counter = 0
 
     def stream(self):
-        co = 0
         for i, row in self.row_iterator:
-            self.row_counter +=1
+            self.row_counter += 1
             text = self.preprocessor.tokenizer(row['tweet_text'])
             yield text
 
@@ -40,6 +39,8 @@ class OnlineTweetStreamer:
                                title='Counting words')
         for _ in range(batches):
             pbar.update()
-            self.cleaned_text= self.get_minibatch(batch_size)
+            self.cleaned_text = self.get_minibatch(batch_size)
 
         print('{:d} rows read from csv'.format(self.row_counter))
+
+
